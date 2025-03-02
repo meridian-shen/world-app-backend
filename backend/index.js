@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import pkg from 'pg';
 const { Pool } = pkg;
-import { IDKit } from '@worldcoin/idkit-standalone';
+import IDKit from '@worldcoin/idkit-standalone';
 
 // Load environment variables
 dotenv.config();
