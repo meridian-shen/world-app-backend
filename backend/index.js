@@ -1,10 +1,12 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { Pool } from "pg";
+import pkg from "pg";
 import { verifyProof } from "@worldcoin/idkit";
 
 dotenv.config();
+
+const { Pool } = pkg;
 
 const app = express();
 app.use(cors());
