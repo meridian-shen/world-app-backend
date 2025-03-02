@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import pkg from "pg";
-import { verifyProof } from "@worldcoin/idkit";
 
 dotenv.config();
 
@@ -18,23 +17,11 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
 
-// Vendor login with World ID
+// ✅ Vendor Login (Receives `nullifier_hash` from Frontend)
 app.post("/api/vendors/login", async (req, res) => {
-  const { merkle_root, nullifier_hash, proof, action } = req.body;
+  const { nullifier_hash } = req.body; // Received from frontend
 
   try {
-    const isValid = await verifyProof({
-      app_id: process.env.WORLD_ID_APP_ID,
-      action, // "redeem_campaign"
-      merkle_root,
-      nullifier_hash,
-      proof,
-    });
-
-    if (!isValid.success) {
-      return res.status(400).json({ message: "Invalid World ID proof" });
-    }
-
     // Check if vendor exists
     const existingVendor = await pool.query(
       "SELECT * FROM vendors WHERE world_id_hash = $1",
@@ -58,23 +45,11 @@ app.post("/api/vendors/login", async (req, res) => {
   }
 });
 
-// Redeem an item with World ID
+// ✅ Redemption Endpoint (Checks if Already Redeemed)
 app.post("/api/redeem", async (req, res) => {
-  const { merkle_root, nullifier_hash, proof, action, campaignId, itemId } = req.body;
+  const { nullifier_hash, campaignId, itemId } = req.body; // Received from frontend
 
   try {
-    const isValid = await verifyProof({
-      app_id: process.env.WORLD_ID_APP_ID,
-      action,
-      merkle_root,
-      nullifier_hash,
-      proof,
-    });
-
-    if (!isValid.success) {
-      return res.status(400).json({ message: "Invalid World ID proof" });
-    }
-
     // Check if already redeemed
     const existingRedemption = await pool.query(
       "SELECT * FROM redemptions WHERE world_id_hash = $1 AND campaign_id = $2",
