@@ -17,12 +17,22 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
 
+// ✅ Fetch all campaigns
+app.get("/api/campaigns", async (req, res) => {
+  try {
+    const campaigns = await pool.query("SELECT * FROM campaigns");
+    res.status(200).json(campaigns.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // ✅ Vendor Login (Receives `nullifier_hash` from Frontend)
 app.post("/api/vendors/login", async (req, res) => {
-  const { nullifier_hash } = req.body; // Received from frontend
+  const { nullifier_hash } = req.body;
 
   try {
-    // Check if vendor exists
     const existingVendor = await pool.query(
       "SELECT * FROM vendors WHERE world_id_hash = $1",
       [nullifier_hash]
@@ -32,7 +42,6 @@ app.post("/api/vendors/login", async (req, res) => {
       return res.status(200).json({ message: "Vendor authenticated", vendorId: existingVendor.rows[0].id });
     }
 
-    // Register vendor
     const newVendor = await pool.query(
       "INSERT INTO vendors (world_id_hash) VALUES ($1) RETURNING id",
       [nullifier_hash]
@@ -47,10 +56,9 @@ app.post("/api/vendors/login", async (req, res) => {
 
 // ✅ Redemption Endpoint (Checks if Already Redeemed)
 app.post("/api/redeem", async (req, res) => {
-  const { nullifier_hash, campaignId, itemId } = req.body; // Received from frontend
+  const { nullifier_hash, campaignId, itemId } = req.body;
 
   try {
-    // Check if already redeemed
     const existingRedemption = await pool.query(
       "SELECT * FROM redemptions WHERE world_id_hash = $1 AND campaign_id = $2",
       [nullifier_hash, campaignId]
@@ -60,7 +68,6 @@ app.post("/api/redeem", async (req, res) => {
       return res.status(400).json({ message: "Already redeemed in this campaign" });
     }
 
-    // Log redemption
     await pool.query(
       "INSERT INTO redemptions (world_id_hash, campaign_id, item_id) VALUES ($1, $2, $3)",
       [nullifier_hash, campaignId, itemId]
